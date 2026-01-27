@@ -2,6 +2,7 @@ package com.kinghy.invoiceanalysis.service;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.TextPosition;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
+//@Service
 public class PositionalInvoiceExtractor {
 
     public static void main(String[] args) {
@@ -28,7 +30,7 @@ public class PositionalInvoiceExtractor {
             // 1. 查找“交款人”
             String payer = findValueOnSameLine(allTextPositions, "交款人");
             System.out.println("交款人: " + (payer != null ? payer : "未找到"));
-            
+
             // 2. 查找“票据号码”
             String invoiceNumber = findValueOnSameLine(allTextPositions, "票据号码");
             System.out.println("票据号码: " + (invoiceNumber != null ? invoiceNumber : "未找到"));
@@ -63,7 +65,7 @@ public class PositionalInvoiceExtractor {
         float roiY_start = keywordPosition.getY() - yTolerance;
         float roiY_end = keywordPosition.getY() + keywordPosition.getHeight() + yTolerance;
         float roiX_start = keywordPosition.getX() + keywordPosition.getWidth();
-        
+
         List<TextPosition> valuePositions = new ArrayList<>();
         for (TextPosition text : allTextPositions) {
             // 检查文本是否在定义的ROI内
@@ -74,7 +76,7 @@ public class PositionalInvoiceExtractor {
                  }
             }
         }
-        
+
         if (valuePositions.isEmpty()) {
             return null;
         }
@@ -103,7 +105,7 @@ public class PositionalInvoiceExtractor {
             for (int j = 0; j < keyword.length(); j++) {
                 sb.append(allTextPositions.get(i + j).getUnicode());
             }
-            
+
             if (keyword.equals(sb.toString())) {
                 // 找到了！返回关键字最后一个字符的位置信息，因为我们需要它的结束坐标。
                 return allTextPositions.get(i + keyword.length() - 1);
