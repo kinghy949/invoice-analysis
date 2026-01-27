@@ -14,7 +14,7 @@ public class PositionalInvoiceExtractor {
 
     public static void main(String[] args) {
         // 使用您提供的其中一个PDF文件进行演示
-        File pdfFile = new File("11060125_0064077272.pdf");
+        File pdfFile = new File("C:\\Users\\PC\\Downloads\\42060223_0001782219.pdf");
 
         try (PDDocument document = PDDocument.load(pdfFile)) {
             TextPositionExtractor stripper = new TextPositionExtractor();

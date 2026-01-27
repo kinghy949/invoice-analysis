@@ -1,0 +1,54 @@
+{
+  "templateName": "北京市通州区中医医院医疗发票",
+  "identifiers": [
+    "北京市通州区中医医院",
+    "医疗门诊收费票据"
+  ],
+  "fields": [
+    {
+      "fieldName": "payer",
+      "keywords": ["交款人:", "交款人"],
+      "strategy": "SAME_LINE",
+      "options": {
+        "trimChars": ": "
+      }
+    },
+    {
+      "fieldName": "invoiceNumber",
+      "keywords": ["票据号码:", "票据号码"],
+      "strategy": "SAME_LINE",
+      "options": {
+        "trimChars": ": "
+      }
+    },
+    {
+      "fieldName": "totalAmount",
+      "keywords": ["金额合计(小写)"],
+      "strategy": "SAME_LINE",
+      "options": {
+        "trimChars": "￥: ",
+        "valuePattern": "[0-9.]+"
+      }
+    },
+    {
+      "fieldName": "businessId",
+      "keywords": ["业务流水号:"],
+      "strategy": "BELOW",
+      "options": {
+        "maxLinesBelow": 2,
+        "stopAtKeywords": ["病历号:"]
+      }
+    },
+    {
+      "fieldName": "hospitalName",
+      "keywords": ["收款单位"],
+      "strategy": "AREA",
+      "options": {
+        "x_start": 100,
+        "y_start": 150,
+        "width": 300,
+        "height": 50
+      }
+    }
+  ]
+}
