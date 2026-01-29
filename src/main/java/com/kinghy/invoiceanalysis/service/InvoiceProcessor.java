@@ -135,4 +135,14 @@ public class InvoiceProcessor {
 
         return extractedData;
     }
+
+    public static void main(String[] args) {
+        InvoiceProcessor processor = new InvoiceProcessor();
+        try {
+            Map<String, String> extractedData = processor.process(new File("C:\\Users\\PC\\Downloads\\11060125_0064077272.pdf"));
+            System.out.println(extractedData);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
