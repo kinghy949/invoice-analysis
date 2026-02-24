@@ -129,6 +129,43 @@ public class TableStrategy implements ExtractionStrategy {
             log.error("TABLE策略必须提供columnIndex或headerKeyword");
             return false;
         }
+
+        Integer columnIndex = TextPositionUtil.getIntOption(options, "columnIndex", null);
+        if (hasColumnIndex && (columnIndex == null || columnIndex < 0)) {
+            log.error("TABLE策略参数columnIndex必须为大于等于0的整数");
+            return false;
+        }
+
+        Integer rowIndex = TextPositionUtil.getIntOption(options, "rowIndex", null);
+        if (options.containsKey("rowIndex") && (rowIndex == null || rowIndex < 0)) {
+            log.error("TABLE策略参数rowIndex必须为大于等于0的整数");
+            return false;
+        }
+
+        String headerKeyword = TextPositionUtil.getStringOption(options, "headerKeyword", null);
+        if (hasHeaderKeyword && (headerKeyword == null || headerKeyword.trim().isEmpty())) {
+            log.error("TABLE策略参数headerKeyword不能为空");
+            return false;
+        }
+
+        Double tableStartY = TextPositionUtil.getDoubleOption(options, "tableStartY", null);
+        Double tableEndY = TextPositionUtil.getDoubleOption(options, "tableEndY", null);
+        if (tableStartY != null && tableEndY != null && tableStartY > tableEndY) {
+            log.error("TABLE策略参数tableStartY不能大于tableEndY");
+            return false;
+        }
+
+        Double rowTolerance = TextPositionUtil.getDoubleOption(options, "rowTolerance", 5.0);
+        if (rowTolerance != null && rowTolerance <= 0) {
+            log.error("TABLE策略参数rowTolerance必须大于0");
+            return false;
+        }
+
+        String columnDelimiter = TextPositionUtil.getStringOption(options, "columnDelimiter", ",");
+        if (options.containsKey("columnDelimiter") && columnDelimiter == null) {
+            log.error("TABLE策略参数columnDelimiter必须为字符串");
+            return false;
+        }
         return true;
     }
 

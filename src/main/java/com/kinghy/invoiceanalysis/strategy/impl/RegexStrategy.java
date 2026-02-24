@@ -94,10 +94,25 @@ public class RegexStrategy implements ExtractionStrategy {
         String pattern = TextPositionUtil.getStringOption(options, "pattern", null);
         try {
             Pattern.compile(pattern);
-            return true;
         } catch (Exception e) {
             log.error("REGEX策略pattern无效: {}", pattern);
             return false;
         }
+
+        Integer groupIndex = TextPositionUtil.getIntOption(options, "groupIndex", 0);
+        if (groupIndex == null || groupIndex < 0) {
+            log.error("REGEX策略参数groupIndex必须大于等于0");
+            return false;
+        }
+
+        String searchScope = TextPositionUtil.getStringOption(options, "searchScope", "FULL");
+        if (searchScope != null) {
+            String upper = searchScope.toUpperCase();
+            if (!"FULL".equals(upper) && !"AFTER_KEYWORD".equals(upper)) {
+                log.error("REGEX策略参数searchScope非法: {}", searchScope);
+                return false;
+            }
+        }
+        return true;
     }
 }

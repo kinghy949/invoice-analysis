@@ -1,7 +1,13 @@
 package com.kinghy.invoiceanalysis.service;
 
 import com.kinghy.invoiceanalysis.entity.dto.FieldDefinition;
+import com.kinghy.invoiceanalysis.entity.dto.InvoiceAnalysisResult;
 import com.kinghy.invoiceanalysis.entity.dto.InvoiceTemplate;
+import com.kinghy.invoiceanalysis.exception.ExtractionFailedException;
+import com.kinghy.invoiceanalysis.exception.InvalidTemplateOptionException;
+import com.kinghy.invoiceanalysis.exception.PdfParseException;
+import com.kinghy.invoiceanalysis.exception.StrategyNotFoundException;
+import com.kinghy.invoiceanalysis.exception.TemplateNotMatchedException;
 import com.kinghy.invoiceanalysis.strategy.ExtractionContext;
 import com.kinghy.invoiceanalysis.strategy.ExtractionStrategy;
 import com.kinghy.invoiceanalysis.strategy.StrategyFactory;
@@ -39,9 +45,11 @@ public class InvoiceProcessor {
      * @param pdfFile PDF文件
      * @return 提取的字段Map
      */
-    public Map<String, String> process(File pdfFile) throws IOException {
+    public InvoiceAnalysisResult process(File pdfFile) {
         try (PDDocument document = PDDocument.load(pdfFile)) {
             return processDocument(document, pdfFile.getName());
+        } catch (IOException e) {
+            throw new PdfParseException("PDF文件解析失败: " + pdfFile.getName(), e);
         }
     }
 
@@ -51,16 +59,18 @@ public class InvoiceProcessor {
      * @param fileName 文件名（用于日志）
      * @return 提取的字段Map
      */
-    public Map<String, String> process(InputStream inputStream, String fileName) throws IOException {
+    public InvoiceAnalysisResult process(InputStream inputStream, String fileName) {
         try (PDDocument document = PDDocument.load(inputStream)) {
             return processDocument(document, fileName);
+        } catch (IOException e) {
+            throw new PdfParseException("PDF输入流解析失败: " + fileName, e);
         }
     }
 
     /**
      * 处理PDF文档
      */
-    private Map<String, String> processDocument(PDDocument document, String fileName) throws IOException {
+    private InvoiceAnalysisResult processDocument(PDDocument document, String fileName) throws IOException {
         Map<String, String> extractedData = new HashMap<>();
 
         // 1. 提取纯文本
@@ -82,7 +92,7 @@ public class InvoiceProcessor {
         InvoiceTemplate template = templateService.findTemplateFor(fullText);
         if (template == null) {
             log.warn("未找到匹配的模板: {}", fileName);
-            return extractedData;
+            throw new TemplateNotMatchedException(fileName);
         }
         log.info("使用模板: {}", template.getTemplateName());
 
@@ -99,13 +109,13 @@ public class InvoiceProcessor {
             ExtractionStrategy strategy = strategyFactory.getStrategy(strategyName);
             if (strategy == null) {
                 log.error("字段 {} 使用了未知策略: {}", field.getFieldName(), strategyName);
-                continue;
+                throw new StrategyNotFoundException(field.getFieldName(), strategyName);
             }
 
             // 验证options参数
             if (!strategy.validateOptions(field.getOptions())) {
                 log.error("字段 {} 的options参数验证失败", field.getFieldName());
-                continue;
+                throw new InvalidTemplateOptionException(field.getFieldName(), strategyName);
             }
 
             // 构建上下文
@@ -130,19 +140,10 @@ public class InvoiceProcessor {
                 }
             } catch (Exception e) {
                 log.error("字段 {} 提取失败: {}", field.getFieldName(), e.getMessage(), e);
+                throw new ExtractionFailedException(field.getFieldName(), e);
             }
         }
 
-        return extractedData;
-    }
-
-    public static void main(String[] args) {
-        InvoiceProcessor processor = new InvoiceProcessor();
-        try {
-            Map<String, String> extractedData = processor.process(new File("C:\\Users\\PC\\Downloads\\11060125_0064077272.pdf"));
-            System.out.println(extractedData);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return new InvoiceAnalysisResult(fileName, template.getTemplateName(), extractedData);
     }
 }

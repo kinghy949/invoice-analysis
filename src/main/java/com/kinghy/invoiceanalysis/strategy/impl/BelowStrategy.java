@@ -144,4 +144,45 @@ public class BelowStrategy implements ExtractionStrategy {
         log.info("字段 {} BELOW策略提取结果: {}", context.getFieldName(), value);
         return value;
     }
+
+    @Override
+    public boolean validateOptions(Map<String, Object> options) {
+        if (options == null) {
+            return true;
+        }
+
+        Integer maxLinesBelow = TextPositionUtil.getIntOption(options, "maxLinesBelow", 1);
+        if (maxLinesBelow != null && maxLinesBelow <= 0) {
+            log.error("BELOW策略参数maxLinesBelow必须大于0");
+            return false;
+        }
+
+        String xAlignment = TextPositionUtil.getStringOption(options, "xAlignment", "ANY");
+        if (xAlignment != null) {
+            String upper = xAlignment.toUpperCase();
+            if (!"LEFT".equals(upper) && !"RIGHT".equals(upper) && !"ANY".equals(upper)) {
+                log.error("BELOW策略参数xAlignment非法: {}", xAlignment);
+                return false;
+            }
+        }
+
+        Double xTolerance = TextPositionUtil.getDoubleOption(options, "xTolerance", 50.0);
+        if (xTolerance != null && xTolerance < 0) {
+            log.error("BELOW策略参数xTolerance不能小于0");
+            return false;
+        }
+
+        Double lineHeight = TextPositionUtil.getDoubleOption(options, "lineHeight", 2.0);
+        if (lineHeight != null && lineHeight <= 0) {
+            log.error("BELOW策略参数lineHeight必须大于0");
+            return false;
+        }
+
+        List<String> stopKeywords = TextPositionUtil.getListOption(options, "stopAtKeywords");
+        if (options.containsKey("stopAtKeywords") && stopKeywords == null) {
+            log.error("BELOW策略参数stopAtKeywords必须为字符串数组");
+            return false;
+        }
+        return true;
+    }
 }
