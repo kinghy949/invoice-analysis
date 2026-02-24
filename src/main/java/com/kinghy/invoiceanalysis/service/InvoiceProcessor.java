@@ -125,6 +125,7 @@ public class InvoiceProcessor {
                     .fullText(fullText)
                     .allTextPositions(allTextPositions)
                     .fieldDefinition(field)
+                    .templateFields(template.getFields())
                     .pageWidth(pageWidth)
                     .pageHeight(pageHeight)
                     .build();

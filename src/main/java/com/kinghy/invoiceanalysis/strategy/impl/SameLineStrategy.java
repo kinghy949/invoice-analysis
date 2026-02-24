@@ -1,5 +1,6 @@
 package com.kinghy.invoiceanalysis.strategy.impl;
 
+import com.kinghy.invoiceanalysis.entity.dto.FieldDefinition;
 import com.kinghy.invoiceanalysis.strategy.ExtractionContext;
 import com.kinghy.invoiceanalysis.strategy.ExtractionStrategy;
 import com.kinghy.invoiceanalysis.strategy.util.TextPositionUtil;
@@ -35,6 +36,7 @@ public class SameLineStrategy implements ExtractionStrategy {
         List<TextPosition> allPositions = context.getAllTextPositions();
         List<String> keywords = context.getKeywords();
         Map<String, Object> options = context.getOptions();
+        List<FieldDefinition> templateFields = context.getTemplateFields();
 
         if (keywords == null || keywords.isEmpty()) {
             log.warn("字段 {} 未配置关键字", context.getFieldName());
@@ -69,10 +71,16 @@ public class SameLineStrategy implements ExtractionStrategy {
         float roiYStart = keywordPosition.getY() - yTolerance;
         float roiYEnd = keywordPosition.getY() + keywordPosition.getHeight() + yTolerance;
         float roiXStart = keywordPosition.getEndX();
+        Integer nextKeywordStartIndex = findNextKeywordStartIndex(
+                allPositions, keywordEndIndex + 1, roiYStart, roiYEnd, keywords, templateFields
+        );
 
         // 4. 收集ROI内的字符
         List<TextPosition> valuePositions = new ArrayList<>();
         for (int i = keywordEndIndex + 1; i < allPositions.size(); i++) {
+            if (nextKeywordStartIndex != null && i >= nextKeywordStartIndex) {
+                break;
+            }
             TextPosition text = allPositions.get(i);
             if (text.getY() >= roiYStart && text.getY() <= roiYEnd) {
                 // 检查距离限制
@@ -103,11 +111,19 @@ public class SameLineStrategy implements ExtractionStrategy {
             value = TextPositionUtil.trimStart(value, trimChars);
         }
         value = value.trim();
+        if (value.isEmpty()) {
+            log.info("字段 {} 在关键字 {} 与下一关键字之间无有效内容，返回空值", context.getFieldName(), matchedKeyword);
+            return null;
+        }
 
         // 7. 应用valuePattern验证
         String valuePattern = TextPositionUtil.getStringOption(options, "valuePattern", null);
         if (valuePattern != null) {
             value = extractByPattern(value, valuePattern);
+            if (value == null || value.trim().isEmpty()) {
+                log.info("字段 {} 未匹配valuePattern，返回空值", context.getFieldName());
+                return null;
+            }
         }
 
         log.info("字段 {} SAME_LINE策略提取结果: {}", context.getFieldName(), value);
@@ -137,6 +153,9 @@ public class SameLineStrategy implements ExtractionStrategy {
      * 使用正则表达式提取匹配的部分
      */
     private String extractByPattern(String text, String patternStr) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
         try {
             Pattern pattern = Pattern.compile(patternStr);
             Matcher matcher = pattern.matcher(text);
@@ -146,7 +165,7 @@ public class SameLineStrategy implements ExtractionStrategy {
         } catch (Exception e) {
             log.error("正则表达式匹配失败: {}", patternStr, e);
         }
-        return text;
+        return null;
     }
 
     /**
@@ -167,5 +186,83 @@ public class SameLineStrategy implements ExtractionStrategy {
             }
         }
         return null;
+    }
+
+    /**
+     * 查找同一行中紧随当前字段后的下一个关键字起始索引，用于截断串值
+     */
+    private Integer findNextKeywordStartIndex(
+            List<TextPosition> allTextPositions,
+            int searchFromIndex,
+            float roiYStart,
+            float roiYEnd,
+            List<String> currentFieldKeywords,
+            List<FieldDefinition> templateFields
+    ) {
+        if (allTextPositions == null || allTextPositions.isEmpty() || templateFields == null || templateFields.isEmpty()) {
+            return null;
+        }
+
+        Set<String> stopKeywords = new LinkedHashSet<>();
+        for (FieldDefinition field : templateFields) {
+            if (field == null || field.getKeywords() == null || field.getKeywords().isEmpty()) {
+                continue;
+            }
+            for (String keyword : field.getKeywords()) {
+                if (keyword == null || keyword.isEmpty()) {
+                    continue;
+                }
+                if (currentFieldKeywords != null && currentFieldKeywords.contains(keyword)) {
+                    continue;
+                }
+                stopKeywords.add(keyword);
+            }
+        }
+
+        if (stopKeywords.isEmpty()) {
+            return null;
+        }
+
+        for (int i = searchFromIndex; i < allTextPositions.size(); i++) {
+            TextPosition tp = allTextPositions.get(i);
+            if (tp.getY() < roiYStart || tp.getY() > roiYEnd) {
+                continue;
+            }
+
+            for (String keyword : stopKeywords) {
+                if (matchesKeywordAt(allTextPositions, i, keyword, roiYStart, roiYEnd)) {
+                    return i;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 判断在指定索引处是否命中某个关键字，且关键字字符都位于同一ROI行范围内
+     */
+    private boolean matchesKeywordAt(
+            List<TextPosition> allTextPositions,
+            int startIndex,
+            String keyword,
+            float roiYStart,
+            float roiYEnd
+    ) {
+        if (startIndex < 0 || keyword == null || keyword.isEmpty()) {
+            return false;
+        }
+        if (startIndex + keyword.length() > allTextPositions.size()) {
+            return false;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int j = 0; j < keyword.length(); j++) {
+            TextPosition tp = allTextPositions.get(startIndex + j);
+            if (tp.getY() < roiYStart || tp.getY() > roiYEnd) {
+                return false;
+            }
+            sb.append(tp.getUnicode());
+        }
+        return keyword.equals(sb.toString());
     }
 }

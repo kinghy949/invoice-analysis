@@ -43,6 +43,11 @@ public class ExtractionContext {
     private FieldDefinition fieldDefinition;
 
     /**
+     * 当前模板的全部字段定义（用于跨字段边界判断）
+     */
+    private List<FieldDefinition> templateFields;
+
+    /**
      * 页面宽度
      */
     private float pageWidth;
