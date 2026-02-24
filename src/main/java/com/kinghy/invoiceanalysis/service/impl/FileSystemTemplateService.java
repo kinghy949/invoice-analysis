@@ -178,10 +178,10 @@ public class FileSystemTemplateService implements TemplateService {
                 continue;
             }
 
-            boolean allIdentifiersFound = true;
+            boolean allIdentifiersFound = false;
             for (String identifier : template.getIdentifiers()) {
-                if (!pdfTextContent.contains(identifier)) {
-                    allIdentifiersFound = false;
+                if (pdfTextContent.contains(identifier)) {
+                    allIdentifiersFound = true;
                     break;
                 }
             }
