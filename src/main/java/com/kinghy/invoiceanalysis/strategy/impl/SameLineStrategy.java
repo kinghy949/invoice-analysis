@@ -42,18 +42,20 @@ public class SameLineStrategy implements ExtractionStrategy {
         }
 
         // 1. 遍历所有关键字，找到第一个匹配的
+        Integer keywordEndIndex = null;
         TextPosition keywordPosition = null;
         String matchedKeyword = null;
         for (String keyword : keywords) {
-            keywordPosition = TextPositionUtil.findKeywordPosition(allPositions, keyword);
-            if (keywordPosition != null) {
+            keywordEndIndex = findKeywordEndIndex(allPositions, keyword);
+            if (keywordEndIndex != null) {
+                keywordPosition = allPositions.get(keywordEndIndex);
                 matchedKeyword = keyword;
                 log.debug("在字段 {} 中找到关键字: {}", context.getFieldName(), keyword);
                 break;
             }
         }
 
-        if (keywordPosition == null) {
+        if (keywordPosition == null || keywordEndIndex == null) {
             log.warn("字段 {} 未找到任何关键字: {}", context.getFieldName(), keywords);
             return null;
         }
@@ -70,16 +72,14 @@ public class SameLineStrategy implements ExtractionStrategy {
 
         // 4. 收集ROI内的字符
         List<TextPosition> valuePositions = new ArrayList<>();
-        for (TextPosition text : allPositions) {
-            if (text.getY() >= roiYStart && text.getY() <= roiYEnd && text.getX() >= roiXStart) {
-                // 确保不是关键字本身的一部分
-                if (text.getX() > keywordPosition.getEndX()) {
-                    // 检查距离限制
-                    if (maxDistance != null && text.getX() - roiXStart > maxDistance) {
-                        continue;
-                    }
-                    valuePositions.add(text);
+        for (int i = keywordEndIndex + 1; i < allPositions.size(); i++) {
+            TextPosition text = allPositions.get(i);
+            if (text.getY() >= roiYStart && text.getY() <= roiYEnd) {
+                // 检查距离限制
+                if (maxDistance != null && text.getX() - roiXStart > maxDistance) {
+                    continue;
                 }
+                valuePositions.add(text);
             }
         }
 
@@ -147,5 +147,25 @@ public class SameLineStrategy implements ExtractionStrategy {
             log.error("正则表达式匹配失败: {}", patternStr, e);
         }
         return text;
+    }
+
+    /**
+     * 在TextPosition序列中查找关键字结束索引
+     */
+    private Integer findKeywordEndIndex(List<TextPosition> allTextPositions, String keyword) {
+        if (keyword == null || keyword.isEmpty() || allTextPositions == null || allTextPositions.isEmpty()) {
+            return null;
+        }
+
+        for (int i = 0; i <= allTextPositions.size() - keyword.length(); i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0; j < keyword.length(); j++) {
+                sb.append(allTextPositions.get(i + j).getUnicode());
+            }
+            if (keyword.equals(sb.toString())) {
+                return i + keyword.length() - 1;
+            }
+        }
+        return null;
     }
 }

@@ -2,55 +2,61 @@
   "templateName": "吉林大学第一医院医疗收费票据",
   "identifiers": [
     "吉林大学第一医院",
-    "吉林省财政部监测"
+    "吉林省医疗门诊收费票据"
   ],
   "fields": [
     {
-      "fieldName": "invoiceCode",
+      "fieldName": "eInvoiceCode",
       "keywords": ["票据代码:", "票据代码：", "票据代码"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{8}"
       }
     },
     {
-      "fieldName": "invoiceNumber",
+      "fieldName": "eInvoiceNumber",
       "keywords": ["票据号码:", "票据号码：", "票据号码"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{10}"
       }
     },
     {
-      "fieldName": "checkCode",
+      "fieldName": "randomNumber",
       "keywords": ["校验码:", "校验码：", "校验码"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[A-Za-z0-9]{6}"
       }
     },
     {
-      "fieldName": "payer",
+      "fieldName": "payerPartyName",
       "keywords": ["交款人:", "交款人：", "交款人"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[\\u4e00-\\u9fa5]{2,20}"
       }
     },
     {
-      "fieldName": "payerCreditCode",
+      "fieldName": "payerPartyCode",
       "keywords": ["交款人统一社会信用代码:", "交款人统一社会信用代码："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[A-Za-z0-9*]{10,30}"
       }
     },
     {
-      "fieldName": "invoiceDate",
+      "fieldName": "issueDate",
       "keywords": ["开票日期:", "开票日期：", "开票日期"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{4}-\\d{2}-\\d{2}"
       }
     },
     {
@@ -63,7 +69,7 @@
       }
     },
     {
-      "fieldName": "totalAmountChinese",
+      "fieldName": "remark",
       "keywords": ["金额合计（太写）", "金额合计(太写)", "金额合计（大写）", "金额合计(大写)"],
       "strategy": "SAME_LINE",
       "options": {
@@ -71,51 +77,57 @@
       }
     },
     {
-      "fieldName": "businessId",
+      "fieldName": "bizCode",
       "keywords": ["业务流水号:", "业务流水号：", "业务流水号"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{8,20}"
       }
     },
     {
-      "fieldName": "outpatientNumber",
+      "fieldName": "patientNumber",
       "keywords": ["门诊号:", "门诊号：", "门诊号"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{6,20}"
       }
     },
     {
-      "fieldName": "visitDate",
+      "fieldName": "medicalDate",
       "keywords": ["就诊日期:", "就诊日期：", "就诊日期"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "\\d{8}"
       }
     },
     {
-      "fieldName": "medicalInstitutionType",
-      "keywords": ["医疗机构类型:", "医疗机构类型：", "医疗机构类型"],
+      "fieldName": "orgType",
+      "keywords": ["医疗机构类型:", "医疗机构类型：", "医疗机构类型", "医疗 构(型：", "医疗机构(型："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[\\u4e00-\\u9fa5]{2,20}"
       }
     },
     {
-      "fieldName": "insuranceType",
-      "keywords": ["医保类型:", "医保类型：", "医保类型"],
+      "fieldName": "medicalInsuranceType",
+      "keywords": ["医保类型:", "医保类型：", "医保类型", "医保(型："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[\\u4e00-\\u9fa5]{1,20}"
       }
     },
     {
-      "fieldName": "insuranceNumber",
+      "fieldName": "medicalInsuranceID",
       "keywords": ["医保编号:", "医保编号：", "医保编号"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[A-Za-z0-9*]{6,30}"
       }
     },
     {
@@ -123,11 +135,12 @@
       "keywords": ["性别:", "性别：", "性别"],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[男女]"
       }
     },
     {
-      "fieldName": "insuranceFundPayment",
+      "fieldName": "fundPayAmount",
       "keywords": ["医保统筹基金支付:", "医保统筹基金支付："],
       "strategy": "SAME_LINE",
       "options": {
@@ -136,7 +149,7 @@
       }
     },
     {
-      "fieldName": "otherPayment",
+      "fieldName": "otherPayAmount",
       "keywords": ["其他支付:", "其他支付："],
       "strategy": "SAME_LINE",
       "options": {
@@ -145,7 +158,7 @@
       }
     },
     {
-      "fieldName": "personalAccountPayment",
+      "fieldName": "accountPayAmount",
       "keywords": ["个人账户支付:", "个人账户支付："],
       "strategy": "SAME_LINE",
       "options": {
@@ -154,7 +167,7 @@
       }
     },
     {
-      "fieldName": "personalCashPayment",
+      "fieldName": "ownPayAmount",
       "keywords": ["个人现金支付:", "个人现金支付："],
       "strategy": "SAME_LINE",
       "options": {
@@ -163,7 +176,7 @@
       }
     },
     {
-      "fieldName": "personalSelfPayment",
+      "fieldName": "selfpaymentAmount",
       "keywords": ["个人自付:", "个人自付："],
       "strategy": "SAME_LINE",
       "options": {
@@ -172,7 +185,7 @@
       }
     },
     {
-      "fieldName": "personalSelfExpense",
+      "fieldName": "selfpaymentCost",
       "keywords": ["个人自费:", "个人自费："],
       "strategy": "SAME_LINE",
       "options": {
@@ -181,7 +194,7 @@
       }
     },
     {
-      "fieldName": "paymentDate",
+      "fieldName": "businessDate",
       "keywords": ["交款日期:", "交款日期："],
       "strategy": "SAME_LINE",
       "options": {
@@ -190,7 +203,7 @@
       }
     },
     {
-      "fieldName": "paymentMethod",
+      "fieldName": "payMode",
       "keywords": ["微信:", "微信：", "支付宝:", "支付宝："],
       "strategy": "SAME_LINE",
       "options": {
@@ -199,27 +212,30 @@
       }
     },
     {
-      "fieldName": "hospitalName",
-      "keywords": ["收款单位", "收款单位（零）:", "收款单位（零）："],
+      "fieldName": "invoicingPartyName",
+      "keywords": ["收款单位", "收款单位（章）:", "收款单位（章）：", "收款单位(章):", "收款单位(章)："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":：（）() "
+        "trimChars": ":：（）() ",
+        "valuePattern": "[\\u4e00-\\u9fa5A-Za-z0-9（）()]{2,40}"
       }
     },
     {
-      "fieldName": "reviewer",
+      "fieldName": "checker",
       "keywords": ["复核人:", "复核人："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[A-Za-z0-9]{6,20}"
       }
     },
     {
-      "fieldName": "cashier",
+      "fieldName": "handlingPerson",
       "keywords": ["收款人:", "收款人："],
       "strategy": "SAME_LINE",
       "options": {
-        "trimChars": ":： "
+        "trimChars": ":： ",
+        "valuePattern": "[A-Za-z0-9]{6,20}"
       }
     }
   ],
@@ -231,15 +247,15 @@
         "header": "项目名称"
       },
       {
-        "fieldName": "quantity",
+        "fieldName": "itemQuantity",
         "header": "数量/单位"
       },
       {
-        "fieldName": "amount",
+        "fieldName": "itemAmount",
         "header": "金额（元）"
       },
       {
-        "fieldName": "remark",
+        "fieldName": "itemRemark",
         "header": "备注"
       }
     ]

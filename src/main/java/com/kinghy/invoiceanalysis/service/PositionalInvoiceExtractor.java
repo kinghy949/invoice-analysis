@@ -70,10 +70,7 @@ public class PositionalInvoiceExtractor {
         for (TextPosition text : allTextPositions) {
             // 检查文本是否在定义的ROI内
             if (text.getY() >= roiY_start && text.getY() <= roiY_end && text.getX() >= roiX_start) {
-                // 确保不是关键字本身的一部分（在非常紧凑的布局中可能发生）
-                 if(text.getX() > keywordPosition.getEndX()){
-                    valuePositions.add(text);
-                 }
+                valuePositions.add(text);
             }
         }
 
