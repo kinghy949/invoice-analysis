@@ -14,17 +14,19 @@ import com.kinghy.invoiceanalysis.strategy.StrategyFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 发票处理器（策略模式重构版）
@@ -73,20 +75,18 @@ public class InvoiceProcessor {
     private InvoiceAnalysisResult processDocument(PDDocument document, String fileName) throws IOException {
         Map<String, String> extractedData = new HashMap<>();
 
-        // 1. 提取纯文本
-        PDFTextStripper textStripper = new PDFTextStripper();
-        textStripper.setStartPage(1);
-        textStripper.setEndPage(1);
-        String fullText = textStripper.getText(document);
-        log.debug("提取PDF文本，长度: {}", fullText.length());
-
-        // 2. 提取带位置的文本
+        // 1. 提取带位置的文本（按坐标排序，避免阅读顺序错乱）
         TextPositionExtractor positionExtractor = new TextPositionExtractor();
+        positionExtractor.setSortByPosition(true);
         positionExtractor.setStartPage(1);
         positionExtractor.setEndPage(1);
         positionExtractor.getText(document);
         List<TextPosition> allTextPositions = positionExtractor.getTextPositions();
         log.debug("提取文本位置信息，总字符数: {}", allTextPositions.size());
+
+        // 2. 按视觉行重建文本，确保同一行字段保持相邻关系
+        String fullText = rebuildVisualLines(allTextPositions);
+        log.info("视觉行文本:{}", fullText);
 
         // 3. 查找匹配的模板
         InvoiceTemplate template = templateService.findTemplateFor(fullText);
@@ -129,6 +129,7 @@ public class InvoiceProcessor {
                     .pageHeight(pageHeight)
                     .build();
 
+            log.info("上下文: {}", context);
             // 执行策略
             try {
                 String value = strategy.extract(context);
@@ -145,5 +146,85 @@ public class InvoiceProcessor {
         }
 
         return new InvoiceAnalysisResult(fileName, template.getTemplateName(), extractedData);
+    }
+
+    /**
+     * 按坐标重建视觉行文本，避免默认阅读顺序导致的错行。
+     */
+    private String rebuildVisualLines(List<TextPosition> allTextPositions) {
+        if (allTextPositions == null || allTextPositions.isEmpty()) {
+            return "";
+        }
+
+        List<TextPosition> sorted = allTextPositions.stream()
+                .filter(tp -> tp != null && tp.getUnicode() != null && !tp.getUnicode().isEmpty())
+                .sorted(Comparator
+                        .comparing(TextPosition::getYDirAdj)
+                        .thenComparing(TextPosition::getXDirAdj))
+                .collect(Collectors.toList());
+
+        List<List<TextPosition>> lines = new ArrayList<>();
+        List<TextPosition> currentLine = new ArrayList<>();
+        float currentY = Float.MIN_VALUE;
+        float currentHeight = 0F;
+
+        for (TextPosition tp : sorted) {
+            float y = tp.getYDirAdj();
+            float height = tp.getHeightDir();
+
+            if (currentLine.isEmpty()) {
+                currentLine.add(tp);
+                currentY = y;
+                currentHeight = height;
+                continue;
+            }
+
+            float tolerance = Math.min(Math.max(currentHeight * 0.6F, 1.5F), 6.0F);
+            if (Math.abs(y - currentY) <= tolerance) {
+                currentLine.add(tp);
+                currentY = (currentY * (currentLine.size() - 1) + y) / currentLine.size();
+                currentHeight = Math.max(currentHeight, height);
+            } else {
+                lines.add(currentLine);
+                currentLine = new ArrayList<>();
+                currentLine.add(tp);
+                currentY = y;
+                currentHeight = height;
+            }
+        }
+
+        if (!currentLine.isEmpty()) {
+            lines.add(currentLine);
+        }
+
+        List<String> visualLines = new ArrayList<>();
+        for (List<TextPosition> line : lines) {
+            line.sort(Comparator.comparing(TextPosition::getXDirAdj));
+            String lineText = buildLineText(line);
+            if (!lineText.isEmpty()) {
+                visualLines.add(lineText);
+            }
+        }
+
+        return String.join("\n", visualLines);
+    }
+
+    private String buildLineText(List<TextPosition> line) {
+        StringBuilder sb = new StringBuilder();
+        TextPosition prev = null;
+
+        for (TextPosition curr : line) {
+            if (prev != null) {
+                float gap = curr.getXDirAdj() - prev.getEndX();
+                float spaceThreshold = Math.max(prev.getWidthOfSpace() * 0.35F, 1.0F);
+                if (gap > spaceThreshold) {
+                    sb.append(' ');
+                }
+            }
+            sb.append(curr.getUnicode());
+            prev = curr;
+        }
+
+        return sb.toString().replaceAll("\\s+", " ").trim();
     }
 }
